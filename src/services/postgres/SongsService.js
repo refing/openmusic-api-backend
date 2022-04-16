@@ -35,7 +35,7 @@ class SongsService {
   }
   async getSong() {
     const result = await this._pool.query('SELECT id, title, performer FROM songs');
-    return result.rows[0].id;
+    return result.rows;
   }
   async getSongById(id) {
     const query = {
