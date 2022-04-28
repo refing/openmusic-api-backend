@@ -10,9 +10,7 @@ class UsersService {
     this._pool = new Pool();
   }
   async addUser({username, password, fullname}) {
-    // TODO: Verifikasi username, pastikan belum terdaftar.
     await this.verifyNewUsername(username);
-    // TODO: Bila verifikasi lolos, maka masukkan user baru ke database.
     const id = `user-${nanoid(16)}`;
     const hashedPassword = await bcrypt.hash(password, 10);
     const query = {

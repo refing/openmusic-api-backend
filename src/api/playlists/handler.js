@@ -15,6 +15,7 @@ class PlaylistsHandler {
     this._validator.validatePlaylistPayload(request.payload);
     const {name} = request.payload;
     const {id: credentialId} = request.auth.credentials;
+    console.log(request.auth.credentials);
     // const {username} = 'own';
 
     const playlistId = await this._service.addPlaylist({name, username: credentialId});

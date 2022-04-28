@@ -2,6 +2,8 @@ require('dotenv').config();
 
 const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
+const path = require('path');
+const Inert = require('@hapi/inert');
 // albums
 const albums = require('./api/albums');
 const AlbumsService = require('./services/postgres/AlbumsService'); // plugin notes
@@ -23,6 +25,16 @@ const authentications = require('./api/authentications');
 const AuthenticationsService = require('./services/postgres/AuthenticationsService');
 const TokenManager = require('./tokenize/TokenManager');
 const AuthenticationsValidator = require('./validator/authentications');
+// export
+const _exports = require('./api/exports');
+const ProducerService = require('./services/rabbitmq/ProducerService');
+const ExportsValidator = require('./validator/exports');
+// uploads
+const uploads = require('./api/uploads');
+const StorageService = require('./services/storage/StorageService');
+const UploadsValidator = require('./validator/uploads');
+// cache
+const CacheService = require('./services/redis/CacheService');
 
 const ClientError = require('./exceptions/ClientError');
 const ServerError = require('./exceptions/ServerError');
@@ -31,11 +43,13 @@ const AuthorizationError = require('./exceptions/AuthorizationError');
 const AuthenticationError = require('./exceptions/AuthenticationError');
 
 const init = async () => {
-  const albumsService = new AlbumsService();
+  const cacheService = new CacheService();
+  const albumsService = new AlbumsService(cacheService);
   const songsService = new SongsService();
   const usersService = new UsersService();
   const playlistsService = new PlaylistsService();
   const authenticationsService = new AuthenticationsService();
+  const storageService = new StorageService(path.resolve(__dirname, 'api/uploads/file/images'));
 
   const server = Hapi.server({
     port: process.env.PORT,
@@ -51,6 +65,9 @@ const init = async () => {
   await server.register([
     {
       plugin: Jwt,
+    },
+    {
+      plugin: Inert,
     },
   ]);
 
@@ -106,6 +123,22 @@ const init = async () => {
       usersService,
       tokenManager: TokenManager,
       validator: AuthenticationsValidator,
+    },
+  },
+  {
+    plugin: _exports,
+    options: {
+      service: ProducerService,
+      validator: ExportsValidator,
+      playlistsService,
+    },
+  },
+  {
+    plugin: uploads,
+    options: {
+      service: storageService,
+      validator: UploadsValidator,
+      albumsService,
     },
   },
   ]);
